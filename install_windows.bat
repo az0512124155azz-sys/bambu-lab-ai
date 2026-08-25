@@ -1,37 +1,60 @@
 @echo off
-setlocal
+REM Bambu Lab AI Monitor - Windows Installation
+REM Simple setup that works with the current structure
 
-echo ============================================
-echo  Bambu Lab AI Monitor - Windows Installer
-echo ============================================
+setlocal enabledelayedexpansion
 
+echo =========================================
+echo Bambu Lab AI Monitor - Windows Setup
+echo =========================================
+echo.
+
+REM Check for Python
 where python >nul 2>nul
 if errorlevel 1 (
-    echo Python was not found. Install Python 3.10+ from https://python.org/downloads
-    echo and re-run this installer.
+    echo ERROR: Python 3.10+ not found
+    echo.
+    echo Please install from: https://www.python.org/downloads/
+    echo Make sure to check "Add Python to PATH" during installation
+    pause
+    exit /b 1
+)
+
+echo Python found:
+python --version
+
+REM Check current directory has the required files
+if not exist "api.py" (
+    echo ERROR: api.py not found in current directory
+    echo Please run this from the project root directory
     pause
     exit /b 1
 )
 
 echo.
-echo [1/4] Creating virtual environment...
-python -m venv "%~dp0..\backend\venv"
+echo [1/3] Creating Python virtual environment...
+python -m venv venv
 
-echo [2/4] Activating virtual environment...
-call "%~dp0..\backend\venv\Scripts\activate.bat"
-
-echo [3/4] Installing dependencies...
+echo [2/3] Installing dependencies...
+call venv\Scripts\activate.bat
 pip install --upgrade pip
-pip install -r "%~dp0..\backend\requirements.txt"
+pip install fastapi uvicorn pyyaml paho-mqtt pillow requests
 
-echo [4/4] Setting up config...
-if not exist "%~dp0..\backend\config.yaml" (
-    copy "%~dp0..\backend\config.example.yaml" "%~dp0..\backend\config.yaml"
-    echo Created backend\config.yaml - EDIT THIS FILE with your printer IP,
-    echo access code, serial number and OpenRouter API key before starting.
+if not exist "config.yaml" (
+    echo.
+    echo [3/3] Creating config.yaml...
+    if exist "config.example.yaml" (
+        copy config.example.yaml config.yaml
+        echo IMPORTANT: Edit config.yaml with your printer details
+    )
 )
 
 echo.
-echo Install complete.
-echo To start the monitor, run: scripts\run_windows.bat
+echo =========================================
+echo Installation complete!
+echo =========================================
+echo.
+echo To start the monitor, run:
+echo   run_windows.bat
+echo.
 pause
