@@ -1,0 +1,15 @@
+openrouter_api_key: "sk-or-..."
+vision_model: "google/gemini-2.0-flash-001"   # any vision-capable model on OpenRouter
+scan_interval_seconds: 15                      # slider range in UI: 10-30
+
+printer_ip: "192.168.1.50"
+printer_access_code: "12345678"                # Printer settings > WLAN > Access Code
+printer_serial: "01P00A000000000"              # Printer settings > Device > Serial
+
+notify_backend: "ntfy"                         # ntfy | pushover | telegram
+notify_config:
+  topic: "my-bambu-alerts-8231"                # ntfy: pick any unique topic, install ntfy app, subscribe to it
+  # pushover: {app_token: "...", user_key: "..."}
+  # telegram: {bot_token: "...", chat_id: "..."}
+
+confidence_alert_threshold: 5                  # 0-100, kept low = ultra-sensitive

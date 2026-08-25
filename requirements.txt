@@ -1,0 +1,6 @@
+opencv-python-headless>=4.9
+requests>=2.31
+PyYAML>=6.0
+paho-mqtt>=1.6,<2.0
+fastapi>=0.110
+uvicorn[standard]>=0.29
