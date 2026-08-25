@@ -1,6 +1,6 @@
 @echo off
 REM Bambu Lab AI Monitor - Windows Installation
-REM Simple setup that works with the current structure
+REM Run this first to set up the environment
 
 setlocal enabledelayedexpansion
 
@@ -22,16 +22,16 @@ if errorlevel 1 (
 
 echo Python found:
 python --version
+echo.
 
-REM Check current directory has the required files
+REM Check if we're in the right directory
 if not exist "api.py" (
-    echo ERROR: api.py not found in current directory
+    echo ERROR: api.py not found
     echo Please run this from the project root directory
     pause
     exit /b 1
 )
 
-echo.
 echo [1/3] Creating Python virtual environment...
 python -m venv venv
 
@@ -40,11 +40,12 @@ call venv\Scripts\activate.bat
 pip install --upgrade pip
 pip install fastapi uvicorn pyyaml paho-mqtt pillow requests
 
+echo.
+echo [3/3] Setting up configuration...
 if not exist "config.yaml" (
-    echo.
-    echo [3/3] Creating config.yaml...
     if exist "config.example.yaml" (
         copy config.example.yaml config.yaml
+        echo.
         echo IMPORTANT: Edit config.yaml with your printer details
     )
 )
