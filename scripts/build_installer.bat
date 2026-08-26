@@ -1,56 +1,40 @@
 @echo off
-REM Bambu Lab AI Monitor - Build Installers
-REM Builds both portable EXE and NSIS MSI installers
+REM Bambu AI Monitor - Full installer build
+REM 1) Builds BambuMonitor.exe with PyInstaller
+REM 2) Wraps it into a Setup.exe wizard with Inno Setup
+REM
+REM Requires Inno Setup: https://jrsoftware.org/isdl.php (free, one-time install)
 
-setlocal enabledelayedexpansion
+setlocal
+cd /d "%~dp0\.."
 
-echo =========================================
-echo Bambu Lab AI Monitor - Installer Builder
-echo =========================================
-echo.
-
-REM Check for Python
-where python >nul 2>nul
-if errorlevel 1 (
-    echo ERROR: Python not found
-    echo Install from: https://python.org/downloads
+echo [1/2] Building BambuMonitor.exe...
+call scripts\build_windows_exe.bat
+if not exist "dist\BambuMonitor.exe" (
+    echo ERROR: BambuMonitor.exe was not produced. See errors above.
     pause
     exit /b 1
 )
 
-REM Create build directory
-if not exist build\windows mkdir build\windows
-cd build\windows
+echo.
+echo [2/2] Building Setup.exe with Inno Setup...
 
-echo [1/4] Building Python dependencies...
-if not exist app mkdir app
-cd ..\..\
-python -m pip install --upgrade pip wheel setuptools pyinstaller
-
-echo [2/4] Copying application files...
-xcopy backend build\windows\app\backend\ /E /I /Y >nul
-xcopy android build\windows\app\android\ /E /I /Y >nul
-copy *.md build\windows\app\ >nul
-copy *.yaml build\windows\app\ >nul
-copy *.bat build\windows\app\ >nul
-
-echo [3/4] Creating PyInstaller standalone exe...
-cd build\windows
-pyinstaller --onedir --windowed --name "BambuMonitor" --icon=app\app.ico app\backend\api.py
-echo Output: build\windows\dist\BambuMonitor\
-
-echo [4/4] Preparing NSIS installer...
-if exist ..\..\scripts\BambuMonitor.nsi (
-    copy ..\..\scripts\BambuMonitor.nsi .
-    echo Run "makensis BambuMonitor.nsi" to create the .exe installer
-) else (
-    echo NSIS script not found
+set ISCC="C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+if not exist %ISCC% set ISCC="C:\Program Files\Inno Setup 6\ISCC.exe"
+if not exist %ISCC% (
+    echo ERROR: Inno Setup not found.
+    echo Install it from https://jrsoftware.org/isdl.php then re-run this script.
+    pause
+    exit /b 1
 )
 
-cd ..\..
+%ISCC% scripts\BambuMonitor.iss
+
 echo.
-echo Build complete!
-echo Outputs in: build\windows\
-echo - dist\BambuMonitor\  (portable)
-echo - BambuMonitor.nsi    (for NSIS, creates MSI)
+echo ============================================
+echo  Done. Installer at: dist_installer\BambuMonitorSetup.exe
+echo  Send that single file to install on any Windows PC -
+echo  it adds a Start Menu entry, optional desktop icon, and
+echo  a proper uninstaller. No Python required on the target PC.
+echo ============================================
 pause

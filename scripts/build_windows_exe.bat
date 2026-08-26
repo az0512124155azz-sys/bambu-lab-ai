@@ -1,68 +1,32 @@
 @echo off
-REM Bambu Lab AI Monitor - Build Windows EXE Installer
-REM Creates a standalone EXE file for distribution
+REM Builds BambuMonitor.exe - a standalone app, no Python install needed
+REM to run it afterward, no console window, lives in the system tray.
+REM Run this once from the project root (where launcher_tray.py lives).
 
-setlocal enabledelayedexpansion
+setlocal
+cd /d "%~dp0\.."
 
-echo ========================================
-echo Building Windows EXE Installer...
-echo ========================================
-echo.
-
-where python >nul 2>nul
-if errorlevel 1 (
-    echo ERROR: Python not found
-    echo Install from https://python.org
+if not exist "venv\Scripts\activate.bat" (
+    echo ERROR: run install_windows.bat first to set up the environment.
+    pause
     exit /b 1
 )
+call venv\Scripts\activate.bat
 
-python --version
-echo.
+echo [1/2] Installing build tool...
+pip install -q pyinstaller pystray pillow
 
-echo [1/5] Installing PyInstaller...
-pip install pyinstaller -q
-
-echo [2/5] Creating build directory...
-if not exist build\windows mkdir build\windows
-cd build\windows
-
-echo [3/5] Copying application files...
-xcopy ..\..\backend backend /E /I /Y >nul
-xcopy ..\..\android android /E /I /Y >nul
-copy ..\..\*.md . >nul 2>&1
-copy ..\..\config.example.yaml . >nul 2>&1
-copy ..\..\requirements.txt . >nul 2>&1
-
-echo [4/5] Creating launcher script...
-(
-    echo import os
-    echo import sys
-    echo from pathlib import Path
-    echo.
-    echo backend_path = Path(__file__).parent / "backend"
-    echo sys.path.insert(0, str(backend_path))
-    echo os.chdir(str(backend_path))
-    echo.
-    echo if __name__ == "__main__":
-    echo     import uvicorn
-    echo     uvicorn.run("api:app", host="0.0.0.0", port=8000, log_level="info")
-) > launcher.py
-
-echo [5/5] Building EXE with PyInstaller...
-pyinstaller --onefile --windowed --name "BambuMonitor" launcher.py
+echo [2/2] Building BambuMonitor.exe (this takes a minute or two)...
+pyinstaller --onefile --windowed --name "BambuMonitor" ^
+    --add-data "config.example.yaml;." ^
+    launcher_tray.py
 
 echo.
-echo ========================================
-echo Build Complete!
-echo ========================================
+echo ============================================
+echo  Build complete.
+echo  EXE: dist\BambuMonitor.exe
+echo ============================================
 echo.
-echo EXE Location:
-echo   .\dist\BambuMonitor.exe
-echo.
-echo Next steps:
-echo   1. Copy config.example.yaml to config.yaml
-echo   2. Edit config.yaml with your printer details
-echo   3. Run BambuMonitor.exe
-echo.
-cd ../..
+echo Next: run scripts\build_installer.bat to wrap this into a proper
+echo Setup.exe with a Start Menu entry, desktop shortcut and uninstaller.
 pause
