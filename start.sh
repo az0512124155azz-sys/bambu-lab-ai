@@ -14,7 +14,11 @@ fi
 
 # Install required packages
 echo "Installing dependencies..."
-pip3 install -q fastapi uvicorn pyyaml paho-mqtt pillow requests
+if [ -f requirements.txt ]; then
+    pip3 install -q -r requirements.txt
+else
+    pip3 install -q fastapi uvicorn pyyaml paho-mqtt pillow requests opencv-python-headless
+fi
 
 # Check for config file
 if [ ! -f config.yaml ]; then

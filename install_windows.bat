@@ -38,7 +38,11 @@ python -m venv venv
 echo [2/3] Installing dependencies...
 call venv\Scripts\activate.bat
 pip install --upgrade pip
-pip install fastapi uvicorn pyyaml paho-mqtt pillow requests
+if exist "requirements.txt" (
+    pip install -r requirements.txt
+) else (
+    pip install fastapi uvicorn pyyaml paho-mqtt pillow requests opencv-python-headless
+)
 
 echo.
 echo [3/3] Setting up configuration...

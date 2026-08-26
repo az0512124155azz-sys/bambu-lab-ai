@@ -16,7 +16,11 @@ if errorlevel 1 (
 
 REM Install required packages
 echo Installing dependencies...
-pip install -q fastapi uvicorn pyyaml paho-mqtt pillow requests
+if exist requirements.txt (
+    pip install -q -r requirements.txt
+) else (
+    pip install -q fastapi uvicorn pyyaml paho-mqtt pillow requests opencv-python-headless
+)
 
 REM Check for config file
 if not exist config.yaml (

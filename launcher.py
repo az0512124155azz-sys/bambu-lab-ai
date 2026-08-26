@@ -18,7 +18,8 @@ def install_dependencies():
         'pyyaml',
         'paho-mqtt',
         'pillow',
-        'requests'
+        'requests',
+        'opencv-python-headless'
     ]
     
     for package in packages:
@@ -61,7 +62,7 @@ def check_config():
             config = yaml.safe_load(f)
         
         # Check for required fields
-        required = ['printer_ip', 'access_code', 'serial_number']
+        required = ['printer_ip', 'printer_access_code', 'printer_serial', 'openrouter_api_key']
         missing = [k for k in required if not config.get(k)]
         
         if missing:
@@ -123,7 +124,7 @@ def main():
     print("[1/4] Checking dependencies...")
     if not install_dependencies():
         print("\n  ✗ Failed to install dependencies.")
-        print("  Try running: pip install fastapi uvicorn pyyaml paho-mqtt pillow requests")
+        print("  Try running: pip install fastapi uvicorn pyyaml paho-mqtt pillow requests opencv-python-headless")
         sys.exit(1)
     print("  ✓ Dependencies installed\n")
     
