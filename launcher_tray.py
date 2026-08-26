@@ -6,21 +6,24 @@ its own native app window (via pywebview) - not a browser tab. A tray
 icon lets you quit even if the window is closed/minimized.
 """
 
+import sys
 import threading
 import time
+import traceback
+import tempfile
+from pathlib import Path
 
 import pystray
 import uvicorn
 import webview
 from PIL import Image, ImageDraw
 
-from pathlib import Path
-
 APP_DIR = Path(__file__).parent
 PORT = 8000
-URL = f"http://localhost:{PORT}"
+URL = f"http://127.0.0.1:{PORT}"
 
 _tray_icon = None
+_window_ready = False
 
 
 def make_icon_image():
@@ -33,7 +36,7 @@ def make_icon_image():
 def run_server():
     import os
     os.chdir(APP_DIR)
-    uvicorn.run("api:app", host="127.0.0.1", port=PORT, log_level="warning")
+    uvicorn.run("api:app", host="127.0.0.1", port=PORT, log_level="info")
 
 
 def quit_app(icon=None, item=None):
@@ -41,6 +44,24 @@ def quit_app(icon=None, item=None):
         _tray_icon.stop()
     import os
     os._exit(0)
+
+
+def on_window_closed():
+    # Only treat this as "user closed the window" if it actually finished
+    # loading first - otherwise a failed/instant window creation would
+    # kill the whole app before we can see why.
+    if _window_ready:
+        quit_app()
+    else:
+        print("[launcher] Window closed before it finished loading - "
+              "this usually means the WebView2 runtime is missing or "
+              "failed to start. Not exiting so you can read this message.")
+
+
+def on_window_loaded():
+    global _window_ready
+    _window_ready = True
+    print("[launcher] Window loaded successfully.")
 
 
 def run_tray():
@@ -55,9 +76,13 @@ def wait_for_server():
     for _ in range(60):
         try:
             urllib.request.urlopen(URL, timeout=1)
-            return
+            print("[launcher] Server is up.")
+            return True
         except Exception:
             time.sleep(0.5)
+    print("[launcher] WARNING: server did not respond after 30s - "
+          "opening the window anyway, but it may be blank.")
+    return False
 
 
 def main():
@@ -73,18 +98,19 @@ def main():
         height=760,
         min_size=(700, 500),
     )
-    # Closing the window exits the whole app (server + tray) - simplest,
-    # least surprising behavior for a single-window app.
-    window.events.closed += lambda: quit_app()
+    window.events.closed += on_window_closed
+    window.events.loaded += on_window_loaded
 
-    # private_mode=True + a storage path unique to THIS app stops WebView2
-    # from sharing cache/history with any other pywebview-based app on the
-    # machine (Edge WebView2 uses a shared default profile folder unless
-    # told otherwise, which caused stale content from a different local
-    # app to render here).
-    import tempfile
-    storage_dir = Path(tempfile.gettempdir()) / "bambu_ai_monitor_webview_data"
-    webview.start(private_mode=True, storage_path=str(storage_dir))
+    try:
+        # debug=True opens DevTools (right-click > Inspect) if something
+        # still renders wrong, and prints webview backend errors to this
+        # console instead of failing silently.
+        webview.start(debug=True)
+    except Exception:
+        print("[launcher] webview.start() crashed:")
+        traceback.print_exc()
+        input("Press Enter to exit...")
+        sys.exit(1)
 
 
 if __name__ == "__main__":
