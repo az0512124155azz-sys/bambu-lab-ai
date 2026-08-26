@@ -1,24 +1,26 @@
 """
 Bambu Monitor - background launcher.
 
-Runs the API server in a background thread, opens the dashboard in the
-default browser once, and shows a system tray icon with Open / Quit —
-so this behaves like a normal installed Windows app instead of a
-terminal window you have to babysit.
+Runs the API server in a background thread and shows the dashboard in
+its own native app window (via pywebview) - not a browser tab. A tray
+icon lets you quit even if the window is closed/minimized.
 """
 
 import threading
 import time
-import webbrowser
-from pathlib import Path
 
 import pystray
 import uvicorn
+import webview
 from PIL import Image, ImageDraw
+
+from pathlib import Path
 
 APP_DIR = Path(__file__).parent
 PORT = 8000
 URL = f"http://localhost:{PORT}"
+
+_tray_icon = None
 
 
 def make_icon_image():
@@ -31,32 +33,51 @@ def make_icon_image():
 def run_server():
     import os
     os.chdir(APP_DIR)
-    uvicorn.run("api:app", host="0.0.0.0", port=PORT, log_level="warning")
+    uvicorn.run("api:app", host="127.0.0.1", port=PORT, log_level="warning")
 
 
-def open_dashboard(icon=None, item=None):
-    webbrowser.open(URL)
-
-
-def quit_app(icon, item):
-    icon.stop()
+def quit_app(icon=None, item=None):
+    if _tray_icon:
+        _tray_icon.stop()
     import os
     os._exit(0)
 
 
+def run_tray():
+    global _tray_icon
+    menu = pystray.Menu(pystray.MenuItem("Quit", quit_app))
+    _tray_icon = pystray.Icon("bambu_monitor", make_icon_image(), "Bambu AI Monitor", menu)
+    _tray_icon.run()
+
+
+def wait_for_server():
+    import urllib.request
+    for _ in range(60):
+        try:
+            urllib.request.urlopen(URL, timeout=1)
+            return
+        except Exception:
+            time.sleep(0.5)
+
+
 def main():
-    server_thread = threading.Thread(target=run_server, daemon=True)
-    server_thread.start()
+    threading.Thread(target=run_server, daemon=True).start()
+    threading.Thread(target=run_tray, daemon=True).start()
 
-    time.sleep(1.5)
-    open_dashboard()
+    wait_for_server()
 
-    menu = pystray.Menu(
-        pystray.MenuItem("Open dashboard", open_dashboard, default=True),
-        pystray.MenuItem("Quit", quit_app),
+    window = webview.create_window(
+        "Bambu AI Monitor",
+        URL,
+        width=1100,
+        height=760,
+        min_size=(700, 500),
     )
-    tray_icon = pystray.Icon("bambu_monitor", make_icon_image(), "Bambu AI Monitor", menu)
-    tray_icon.run()
+    # Closing the window exits the whole app (server + tray) - simplest,
+    # least surprising behavior for a single-window app.
+    window.events.closed += lambda: quit_app()
+
+    webview.start()
 
 
 if __name__ == "__main__":

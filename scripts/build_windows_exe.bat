@@ -14,7 +14,7 @@ if not exist "venv\Scripts\activate.bat" (
 call venv\Scripts\activate.bat
 
 echo [1/2] Installing build tool...
-pip install -q pyinstaller pystray pillow
+pip install -q pyinstaller pystray pillow pywebview
 
 echo [2/2] Building BambuMonitor.exe (this takes a minute or two)...
 pyinstaller --onefile --windowed --name "BambuMonitor" ^
