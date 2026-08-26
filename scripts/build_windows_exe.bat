@@ -19,6 +19,7 @@ pip install -q pyinstaller pystray pillow pywebview
 echo [2/2] Building BambuMonitor.exe (this takes a minute or two)...
 pyinstaller --onefile --windowed --name "BambuMonitor" ^
     --add-data "config.example.yaml;." ^
+    --add-data "static;static" ^
     launcher_tray.py
 
 echo.

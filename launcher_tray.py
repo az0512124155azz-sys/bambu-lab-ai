@@ -77,7 +77,14 @@ def main():
     # least surprising behavior for a single-window app.
     window.events.closed += lambda: quit_app()
 
-    webview.start()
+    # private_mode=True + a storage path unique to THIS app stops WebView2
+    # from sharing cache/history with any other pywebview-based app on the
+    # machine (Edge WebView2 uses a shared default profile folder unless
+    # told otherwise, which caused stale content from a different local
+    # app to render here).
+    import tempfile
+    storage_dir = Path(tempfile.gettempdir()) / "bambu_ai_monitor_webview_data"
+    webview.start(private_mode=True, storage_path=str(storage_dir))
 
 
 if __name__ == "__main__":
